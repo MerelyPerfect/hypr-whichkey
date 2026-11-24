@@ -26,6 +26,8 @@ You set up 80 keybinds, and a week later you remember 12 of them. Cheat-sheet sc
 - **Multi-monitor**: shows on the screen you're working on
 - **Works with both config styles**: classic `hyprland.conf` and the new Lua config (0.57+)
 
+<p align="center"><img src="assets/screenshot-shift.png" alt="Holding SUPER + SHIFT narrows the list"><br><sub>Add <kbd>SHIFT</kbd> and the list narrows to <code>SUPER + SHIFT</code> binds.</sub></p>
+
 ## Install
 
 **Requirements:** Hyprland and [Quickshell](https://quickshell.org) (`qs`).
