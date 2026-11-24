@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-11-24
+
+- More compact default layout: smaller text, tighter keycaps and spacing (about 30% less height)
+
 ## 0.2.0 — 2026-11-24
 
 - Binds are grouped into categories (Workspaces, Windows, Layout, Apps, Media, Screenshots, System, Other)

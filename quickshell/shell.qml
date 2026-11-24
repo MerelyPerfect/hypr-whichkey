@@ -244,7 +244,7 @@ ShellRoot {
                 id: box
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: Math.min(parent.width - 80, grid.implicitWidth + 40 * root.uiScale)
-                implicitHeight: col.implicitHeight + 32 * root.uiScale
+                implicitHeight: col.implicitHeight + 20 * root.uiScale
                 radius: 10
                 color: Qt.rgba(root.background.r, root.background.g, root.background.b, root.bgOpacity)
                 border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.45)
@@ -253,50 +253,50 @@ ShellRoot {
                 Column {
                     id: col
                     anchors.centerIn: parent
-                    spacing: 8 * root.uiScale
+                    spacing: 6 * root.uiScale
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: root.modsLabel(root.mask) + "  +  …"
-                        color: root.header; font.pixelSize: 18 * root.uiScale; font.bold: true
+                        color: root.header; font.pixelSize: 15 * root.uiScale; font.bold: true
                         font.family: root.font
                     }
                     Grid {
                         id: grid
                         columns: Math.max(1, Math.min(root.maxColumns, root.sections.length))
-                        columnSpacing: 36 * root.uiScale; rowSpacing: 12 * root.uiScale
+                        columnSpacing: 28 * root.uiScale; rowSpacing: 8 * root.uiScale
                         Repeater {
                             model: root.sections
                             Column {
                                 required property var modelData
-                                spacing: 4 * root.uiScale
+                                spacing: 2 * root.uiScale
                                 Text {                                  // category title (blank for continuations)
                                     visible: root.grouping
                                     text: modelData.title || " "
                                     color: root.accent; opacity: 0.85
-                                    font.pixelSize: 13 * root.uiScale; font.bold: true
+                                    font.pixelSize: 11 * root.uiScale; font.bold: true
                                     font.capitalization: Font.AllUppercase; font.letterSpacing: 1.5
                                     font.family: root.font
-                                    leftPadding: 90 * root.uiScale + 12 * root.uiScale
+                                    leftPadding: 64 * root.uiScale + 8 * root.uiScale
                                 }
                                 Repeater {
                                     model: modelData.items
                                     Row {
                                         required property var modelData
-                                        spacing: 12 * root.uiScale
+                                        spacing: 6 * root.uiScale
                                         Item {
-                                            width: 90 * root.uiScale; height: cap.height
+                                            width: 64 * root.uiScale; height: cap.height
                                             Rectangle {
                                                 id: cap
                                                 anchors.right: parent.right
-                                                width: Math.max(32 * root.uiScale, keyText.implicitWidth + 14 * root.uiScale)
-                                                height: keyText.implicitHeight + 6 * root.uiScale
+                                                width: Math.max(24 * root.uiScale, keyText.implicitWidth + 10 * root.uiScale)
+                                                height: keyText.implicitHeight + 2 * root.uiScale
                                                 radius: 6
                                                 color: root.accent
                                                 Text {
                                                     id: keyText
                                                     anchors.centerIn: parent
                                                     text: root.prettyKey(modelData.key)
-                                                    color: root.background; font.pixelSize: 17 * root.uiScale; font.bold: true
+                                                    color: root.background; font.pixelSize: 14 * root.uiScale; font.bold: true
                                                     font.family: root.font
                                                 }
                                             }
@@ -304,7 +304,7 @@ ShellRoot {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: modelData.label
-                                            color: root.foreground; font.pixelSize: 16 * root.uiScale
+                                            color: root.foreground; font.pixelSize: 14 * root.uiScale
                                             font.family: root.font
                                         }
                                     }
