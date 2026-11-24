@@ -23,7 +23,7 @@ ShellRoot {
     readonly property int    delay:        cfg.delay ?? 400
     readonly property string position:     cfg.position ?? "bottom"         // bottom | top | center
     readonly property int    offset:       cfg.offset ?? 60
-    readonly property int    maxColumns:   cfg.maxColumns ?? 4
+    readonly property int    maxColumns:   cfg.maxColumns ?? 5
     readonly property int    rowsPerCol:   cfg.rowsPerColumn ?? 8
     readonly property bool   onlyDescribed: cfg.onlyDescribed ?? false
     readonly property var    hidden:       cfg.hide ?? []                   // regexes matched against "key desc"
@@ -46,9 +46,59 @@ ShellRoot {
         console.info("hypr-whichkey: theme from", src);
     }
 
+    readonly property bool grouping: cfg.group ?? true
+    // Built-in categories, checked in order against "<label> <dispatcher> <arg>".
+    // Users can prepend their own via config "categories": { "Name": "regex", ... }
+    readonly property var builtinCategories: [
+        ["Workspaces",  "workspace|scratchpad|special"],
+        ["Screenshots", "screenshot|screen ?shot|record|hyprshot|grim|picker|colou?r"],
+        ["Media",       "volume|audio|music|media|playerctl|brightness|\\bmic\\b|play|pause"],
+        ["Layout",      "layout|split|dwindle|master|gaps|group|pseudo|togglesplit"],
+        ["Windows",     "window|focus|move|swap|resize|fullscreen|float|kill|close|pin|cycle|maximi|centerwindow"],
+        ["System",      "lock|logout|power|reload|exit|notification|wallpaper|theme|setting|blur|game ?mode|idle|keybind|bar|waybar|zoom"],
+        ["Apps",        "^run |exec|terminal|browser|file|launcher|editor|open|menu"]
+    ]
+    readonly property var categoryRules: {
+        const user = Object.entries(cfg.categories ?? {});
+        return user.concat(builtinCategories).map(([n, r]) => [n, new RegExp(r, "i")]);
+    }
+    // Explicit wins: a description like "Media: play/pause" or "[Media] play/pause"
+    function categorize(b) {
+        let m = b.desc.match(/^\[([^\]]+)\]\s*(.*)$/) || b.desc.match(/^([A-Z][\w &/-]{1,18}):\s+(.*)$/);
+        if (m) return { cat: m[1], label: m[2] };
+        const hay = b.desc + " " + b.dispatcher + " " + b.arg;
+        for (const [n, r] of categoryRules) if (r.test(hay)) return { cat: n, label: b.desc };
+        return { cat: "Other", label: b.desc };
+    }
+
     readonly property var shown: binds
         .filter(b => b.mask === mask)
         .sort((a, b) => a.key.localeCompare(b.key))
+
+    // [{ title, items }] — sections split into chunks of rowsPerCol so tall groups wrap
+    readonly property var sections: {
+        if (!grouping) {
+            const out = [];
+            for (let i = 0; i < shown.length; i += rowsPerCol)
+                out.push({ title: "", items: shown.slice(i, i + rowsPerCol).map(b => ({ key: b.key, label: b.desc })) });
+            return out;
+        }
+        const order = categoryRules.map(r => r[0]).concat(["Other"]);
+        const by = {};
+        for (const b of shown) {
+            const c = categorize(b);
+            (by[c.cat] = by[c.cat] || []).push({ key: b.key, label: c.label });
+        }
+        const names = Object.keys(by).sort((a, b) => {
+            const ia = order.indexOf(a), ib = order.indexOf(b);
+            return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a.localeCompare(b);
+        });
+        const out = [];
+        for (const n of names)
+            for (let i = 0; i < by[n].length; i += rowsPerCol)
+                out.push({ title: i === 0 ? n : "", items: by[n].slice(i, i + rowsPerCol) });
+        return out;
+    }
 
     function modsLabel(m) {
         const p = [];
@@ -88,7 +138,7 @@ ShellRoot {
                     root.binds = JSON.parse(text)
                         .filter(b => !b.key.startsWith("switch:") && b.submap === "" && (b.modmask & 64))
                         .filter(b => !root.onlyDescribed || b.has_description)
-                        .map(b => ({ mask: b.modmask, key: b.key, desc: root.describe(b) }))
+                        .map(b => ({ mask: b.modmask, key: b.key, desc: root.describe(b), dispatcher: b.dispatcher || "", arg: b.arg || "" }))
                         .filter(b => b.desc !== "")
                         .filter(b => !hide.some(r => r.test(b.key + " " + b.desc)))
                         .filter(b => { const id = b.mask + b.key; if (seen[id]) return false; seen[id] = true; return true; });
@@ -212,38 +262,52 @@ ShellRoot {
                     }
                     Grid {
                         id: grid
-                        columns: Math.max(1, Math.min(root.maxColumns, Math.ceil(root.shown.length / root.rowsPerCol)))
-                        rows: Math.ceil(root.shown.length / columns)
-                        flow: Grid.TopToBottom
-                        columnSpacing: 32 * root.uiScale; rowSpacing: 4 * root.uiScale
+                        columns: Math.max(1, Math.min(root.maxColumns, root.sections.length))
+                        columnSpacing: 36 * root.uiScale; rowSpacing: 12 * root.uiScale
                         Repeater {
-                            model: root.shown
-                            Row {
+                            model: root.sections
+                            Column {
                                 required property var modelData
-                                spacing: 12 * root.uiScale
-                                Item {
-                                    width: 90 * root.uiScale; height: cap.height
-                                    Rectangle {
-                                        id: cap
-                                        anchors.right: parent.right
-                                        width: Math.max(32 * root.uiScale, keyText.implicitWidth + 14 * root.uiScale)
-                                        height: keyText.implicitHeight + 6 * root.uiScale
-                                        radius: 6
-                                        color: root.accent
+                                spacing: 4 * root.uiScale
+                                Text {                                  // category title (blank for continuations)
+                                    visible: root.grouping
+                                    text: modelData.title || " "
+                                    color: root.accent; opacity: 0.85
+                                    font.pixelSize: 13 * root.uiScale; font.bold: true
+                                    font.capitalization: Font.AllUppercase; font.letterSpacing: 1.5
+                                    font.family: root.font
+                                    leftPadding: 90 * root.uiScale + 12 * root.uiScale
+                                }
+                                Repeater {
+                                    model: modelData.items
+                                    Row {
+                                        required property var modelData
+                                        spacing: 12 * root.uiScale
+                                        Item {
+                                            width: 90 * root.uiScale; height: cap.height
+                                            Rectangle {
+                                                id: cap
+                                                anchors.right: parent.right
+                                                width: Math.max(32 * root.uiScale, keyText.implicitWidth + 14 * root.uiScale)
+                                                height: keyText.implicitHeight + 6 * root.uiScale
+                                                radius: 6
+                                                color: root.accent
+                                                Text {
+                                                    id: keyText
+                                                    anchors.centerIn: parent
+                                                    text: root.prettyKey(modelData.key)
+                                                    color: root.background; font.pixelSize: 17 * root.uiScale; font.bold: true
+                                                    font.family: root.font
+                                                }
+                                            }
+                                        }
                                         Text {
-                                            id: keyText
-                                            anchors.centerIn: parent
-                                            text: root.prettyKey(modelData.key)
-                                            color: root.background; font.pixelSize: 17 * root.uiScale; font.bold: true
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: modelData.label
+                                            color: root.foreground; font.pixelSize: 16 * root.uiScale
                                             font.family: root.font
                                         }
                                     }
-                                }
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.desc
-                                    color: root.foreground; font.pixelSize: 16 * root.uiScale
-                                    font.family: root.font
                                 }
                             }
                         }

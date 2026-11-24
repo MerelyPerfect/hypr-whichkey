@@ -18,6 +18,7 @@ It reads *your* keybinds live and matches *your* theme, so there's nothing to co
 You set up 80 keybinds, and a week later you remember 12 of them. Cheat-sheet scripts make you open a menu and search. hypr-whichkey works like the which-key menu in Neovim, but for your whole desktop:
 
 - **Appears while you hold SUPER** (after 400 ms, so quick shortcuts never flash it)
+- **Grouped by category**: Workspaces, Windows, Layout, Apps, Media, Screenshots, System, worked out from your binds
 - **Narrows live**: press <kbd>SHIFT</kbd> while holding SUPER and the list changes to `SUPER + SHIFT` binds
 - **Never steals focus**: keep typing your shortcut and the overlay disappears when you let go
 - **Always matches your config**: it reads `hyprctl binds` every time it opens, so a reload is reflected immediately
@@ -83,6 +84,19 @@ hl.bind(mod .. " + Return", hl.dsp.exec_cmd("kitty"), { description = "Open term
 
 > In Lua configs, binds that call your own functions (closures) have no readable fallback, so give those a `description`.
 
+## Categories
+
+Binds are grouped automatically by matching their label, dispatcher and arguments against built-in rules (Workspaces, Screenshots, Media, Layout, Windows, System, Apps). Anything that matches none of them goes under **Other**.
+
+To choose the category yourself, prefix the description:
+
+```ini
+bindd = SUPER, K, Kubernetes: k9s, exec, ghostty -e k9s
+bindd = SUPER, M, [Media] play / pause, exec, playerctl play-pause
+```
+
+The prefix is removed from the displayed label. To add categories without editing every bind, use `categories` in the config. Set `"group": false` for a flat list.
+
 ## Configure (optional)
 
 Create `~/.config/hypr-whichkey/config.json`. Every key is optional, and changes apply live without a restart.
@@ -93,7 +107,9 @@ Create `~/.config/hypr-whichkey/config.json`. Every key is optional, and changes
   "delay": 400,              // ms SUPER must be held before showing
   "position": "bottom",      // bottom | top
   "offset": 60,              // px from the screen edge
-  "maxColumns": 4,
+  "group": true,             // group binds into categories
+  "categories": { "Kubernetes": "k9s|kube|helm" },   // extra categories (regex), checked before the built-in ones
+  "maxColumns": 5,
   "rowsPerColumn": 8,
   "onlyDescribed": false,    // true = hide binds without a description
   "hide": ["^mouse"],        // regexes matched against "<key> <label>"
@@ -144,7 +160,7 @@ Modifier mask values: `SHIFT=1 CTRL=4 ALT=8 SUPER=64`.
 ## Roadmap
 
 - [ ] Submap support (show the binds of the active submap)
-- [ ] Group binds by category
+- [x] Group binds by category
 - [ ] AUR / COPR / Nix flake packages
 
 PRs are welcome, especially screenshots with other themes.

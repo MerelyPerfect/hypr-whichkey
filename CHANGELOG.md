@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 — 2026-11-24
+
+- Binds are grouped into categories (Workspaces, Windows, Layout, Apps, Media, Screenshots, System, Other)
+- Choose a category with a `Category: label` or `[Category] label` description prefix
+- Custom categories via `categories` in config.json; `"group": false` for a flat list
+- Default `maxColumns` is now 5
+
 ## 0.1.0 — 2026-11-24
 
 First release.

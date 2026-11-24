@@ -1,12 +1,16 @@
 {
   "size": "medium",
+  "group": true,
   "delay": 400,
   "position": "bottom",
   "offset": 60,
-  "maxColumns": 4,
+  "maxColumns": 5,
   "rowsPerColumn": 8,
   "onlyDescribed": false,
-  "hide": ["^mouse", "workspace 10$"],
+  "hide": [
+    "^mouse",
+    "workspace 10$"
+  ],
   "font": "JetBrainsMono Nerd Font",
   "opacity": 0.95,
   "theme": {
@@ -14,5 +18,8 @@
     "background": "#101014",
     "foreground": "#f5f5f5",
     "header": "#ffd479"
+  },
+  "categories": {
+    "Kubernetes": "k9s|kube|k8s|helm"
   }
 }
