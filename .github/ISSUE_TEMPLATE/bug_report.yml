@@ -1,0 +1,22 @@
+name: Bug report
+description: Something doesn't show up or behaves oddly
+labels: [bug]
+body:
+  - type: input
+    id: hyprland
+    attributes: { label: Hyprland version, description: "`hyprctl version | head -1`" }
+    validations: { required: true }
+  - type: input
+    id: quickshell
+    attributes: { label: Quickshell version, description: "`qs --version`" }
+  - type: dropdown
+    id: config
+    attributes: { label: Config style, options: [hyprland.conf, hyprland.lua] }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: Steps, expected vs actual. Screenshots welcome. }
+    validations: { required: true }
+  - type: textarea
+    id: logs
+    attributes: { label: Logs, description: "Output of `qs -c hypr-whichkey` run in a terminal", render: shell }

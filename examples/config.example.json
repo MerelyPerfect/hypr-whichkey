@@ -1,0 +1,18 @@
+{
+  "size": "medium",
+  "delay": 400,
+  "position": "bottom",
+  "offset": 60,
+  "maxColumns": 4,
+  "rowsPerColumn": 8,
+  "onlyDescribed": false,
+  "hide": ["^mouse", "workspace 10$"],
+  "font": "JetBrainsMono Nerd Font",
+  "opacity": 0.95,
+  "theme": {
+    "accent": "#7dd3fc",
+    "background": "#101014",
+    "foreground": "#f5f5f5",
+    "header": "#ffd479"
+  }
+}

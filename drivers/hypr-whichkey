@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# hypr-whichkey driver for classic hyprland.conf setups.
+# Called from non-consuming binds (see whichkey.conf):  hypr-whichkey <mask>  |  hypr-whichkey 0
+# Writes "<mask> <focused-monitor>" to $XDG_RUNTIME_DIR/hypr-whichkey.
+set -eu
+state="${XDG_RUNTIME_DIR:-/tmp}/hypr-whichkey"
+mask="${1:-0}"
+case "$mask" in ''|*[!0-9]*) echo "usage: hypr-whichkey <modmask>|0" >&2; exit 2;; esac
+if [ "$mask" = 0 ]; then echo 0 > "$state"; exit 0; fi
+mon=$(hyprctl -j activeworkspace 2>/dev/null | sed -n 's/.*"monitor": *"\([^"]*\)".*/\1/p' | head -n1)
+echo "$mask ${mon}" > "$state"
