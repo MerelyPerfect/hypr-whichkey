@@ -8,6 +8,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 
 ShellRoot {
     id: root
@@ -15,6 +16,8 @@ ShellRoot {
     // ---------- state ----------
     property int rawMask: 0          // what the driver says right now
     property int mask: 0             // what we display (after delay)
+    property string submap: ""       // active Hyprland submap ("" = none)
+    readonly property bool inSubmap: showSubmaps && submap !== ""
     property string monitor: ""
     property var binds: []
 
@@ -46,7 +49,8 @@ ShellRoot {
         console.info("hypr-whichkey: theme from", src);
     }
 
-    readonly property bool grouping: cfg.group ?? true
+    readonly property bool showSubmaps: cfg.submaps ?? true
+    readonly property bool grouping: (cfg.group ?? true) && !inSubmap
     // Built-in categories, checked in order against "<label> <dispatcher> <arg>".
     // Users can prepend their own via config "categories": { "Name": "regex", ... }
     readonly property var builtinCategories: [
@@ -71,8 +75,9 @@ ShellRoot {
         return { cat: "Other", label: b.desc };
     }
 
-    readonly property var shown: binds
-        .filter(b => b.mask === mask)
+    readonly property var shown: (inSubmap
+            ? binds.filter(b => b.submap === submap)
+            : binds.filter(b => b.submap === "" && b.mask === mask))
         .sort((a, b) => a.key.localeCompare(b.key))
 
     // [{ title, items }] — sections split into chunks of rowsPerCol so tall groups wrap
@@ -80,14 +85,14 @@ ShellRoot {
         if (!grouping) {
             const out = [];
             for (let i = 0; i < shown.length; i += rowsPerCol)
-                out.push({ title: "", items: shown.slice(i, i + rowsPerCol).map(b => ({ key: b.key, label: b.desc })) });
+                out.push({ title: "", items: shown.slice(i, i + rowsPerCol).map(b => ({ key: b.key, mask: b.mask, label: b.desc })) });
             return out;
         }
         const order = categoryRules.map(r => r[0]).concat(["Other"]);
         const by = {};
         for (const b of shown) {
             const c = categorize(b);
-            (by[c.cat] = by[c.cat] || []).push({ key: b.key, label: c.label });
+            (by[c.cat] = by[c.cat] || []).push({ key: b.key, mask: b.mask, label: c.label });
         }
         const names = Object.keys(by).sort((a, b) => {
             const ia = order.indexOf(a), ib = order.indexOf(b);
@@ -107,6 +112,16 @@ ShellRoot {
         if (m & 8)  p.push("ALT");
         if (m & 1)  p.push("SHIFT");
         return p.join(" + ");
+    }
+    // In a submap, binds can use any modifiers, so show them on the keycap ("⇧ H")
+    function keyLabel(item) {
+        if (!inSubmap || !item.mask) return prettyKey(item.key);
+        const p = [];
+        if (item.mask & 64) p.push("❖");
+        if (item.mask & 4)  p.push("Ctrl");
+        if (item.mask & 8)  p.push("Alt");
+        if (item.mask & 1)  p.push("⇧");
+        return p.join(" ") + " " + prettyKey(item.key);
     }
     function prettyKey(k) {
         const map = { Return: "⏎", SPACE: "Space", space: "Space", Escape: "Esc", Tab: "Tab", BackSpace: "⌫",
@@ -136,12 +151,12 @@ ShellRoot {
                 try {
                     const seen = {}, hide = root.hidden.map(r => new RegExp(r, "i"));
                     root.binds = JSON.parse(text)
-                        .filter(b => !b.key.startsWith("switch:") && b.submap === "" && (b.modmask & 64))
+                        .filter(b => !b.key.startsWith("switch:") && (b.submap !== "" || (b.modmask & 64)))
                         .filter(b => !root.onlyDescribed || b.has_description)
-                        .map(b => ({ mask: b.modmask, key: b.key, desc: root.describe(b), dispatcher: b.dispatcher || "", arg: b.arg || "" }))
+                        .map(b => ({ mask: b.modmask, key: b.key, desc: root.describe(b), dispatcher: b.dispatcher || "", arg: b.arg || "", submap: b.submap || "" }))
                         .filter(b => b.desc !== "")
                         .filter(b => !hide.some(r => r.test(b.key + " " + b.desc)))
-                        .filter(b => { const id = b.mask + b.key; if (seen[id]) return false; seen[id] = true; return true; });
+                        .filter(b => { const id = b.submap + "/" + b.mask + b.key; if (seen[id]) return false; seen[id] = true; return true; });
                 } catch (e) { console.warn("hypr-whichkey: cannot parse binds:", e); }
             }
         }
@@ -216,6 +231,19 @@ ShellRoot {
             else showTimer.restart();
         }
     }
+    // Submaps: Hyprland announces them on its event socket ("submap>>name", empty on reset).
+    // Works for both hyprland.conf and hyprland.lua, no driver needed.
+    Connections {
+        target: Hyprland
+        function onRawEvent(ev) {
+            if (ev.name !== "submap") return;
+            if (ev.data !== "") {
+                bindsProc.running = true;
+                if (Hyprland.focusedMonitor) root.monitor = Hyprland.focusedMonitor.name;
+            }
+            root.submap = ev.data;
+        }
+    }
     Timer { id: showTimer; interval: root.delay; onTriggered: root.mask = root.rawMask }
 
     // ---------- UI ----------
@@ -224,7 +252,7 @@ ShellRoot {
         PanelWindow {
             required property var modelData
             screen: modelData
-            visible: root.mask !== 0 && root.shown.length > 0
+            visible: (root.mask !== 0 || root.inSubmap) && root.shown.length > 0
                      && (root.monitor === "" || modelData.name === root.monitor)
             color: "transparent"
             anchors {
@@ -256,7 +284,7 @@ ShellRoot {
                     spacing: 6 * root.uiScale
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: root.modsLabel(root.mask) + "  +  …"
+                        text: root.inSubmap ? "submap  ·  " + root.submap : root.modsLabel(root.mask) + "  +  …"
                         color: root.header; font.pixelSize: 15 * root.uiScale; font.bold: true
                         font.family: root.font
                     }
@@ -295,7 +323,7 @@ ShellRoot {
                                                 Text {
                                                     id: keyText
                                                     anchors.centerIn: parent
-                                                    text: root.prettyKey(modelData.key)
+                                                    text: root.keyLabel(modelData)
                                                     color: root.background; font.pixelSize: 14 * root.uiScale; font.bold: true
                                                     font.family: root.font
                                                 }

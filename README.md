@@ -19,6 +19,7 @@ You set up 80 keybinds, and a week later you remember 12 of them. Cheat-sheet sc
 
 - **Appears while you hold SUPER** (after 400 ms, so quick shortcuts never flash it)
 - **Grouped by category**: Workspaces, Windows, Layout, Apps, Media, Screenshots, System, worked out from your binds
+- **Submap aware**: enter a submap (resize mode, launcher mode…) and its binds appear right away, until you leave it
 - **Narrows live**: press <kbd>SHIFT</kbd> while holding SUPER and the list changes to `SUPER + SHIFT` binds
 - **Never steals focus**: keep typing your shortcut and the overlay disappears when you let go
 - **Always matches your config**: it reads `hyprctl binds` every time it opens, so a reload is reflected immediately
@@ -99,6 +100,31 @@ bindd = SUPER, M, [Media] play / pause, exec, playerctl play-pause
 
 The prefix is removed from the displayed label. To add categories without editing every bind, use `categories` in the config. Set `"group": false` for a flat list.
 
+## Submaps
+
+When you enter a [submap](https://wiki.hypr.land/Configuring/Binds/#submaps), the overlay appears immediately, without holding SUPER, and lists that submap's binds with their modifiers. It disappears when the submap resets. It listens to Hyprland's event socket, so this works with both config styles and needs no extra driver lines.
+
+```ini
+# hyprland.conf
+bindd = SUPER, R, Resize mode, submap, resize
+submap = resize
+bindde = , right, grow width,   resizeactive, 20 0
+bindde = , left,  shrink width, resizeactive, -20 0
+bindd  = , escape, leave,       submap, reset
+submap = reset
+```
+```lua
+-- hyprland.lua
+hl.define_submap("resize", function()
+    hl.bind("right",  hl.dsp.resize({ x = 20, y = 0 }),  { description = "grow width", repeating = true })
+    hl.bind("left",   hl.dsp.resize({ x = -20, y = 0 }), { description = "shrink width", repeating = true })
+    hl.bind("Escape", hl.dsp.submap("reset"),            { description = "leave" })
+end)
+hl.bind(mod .. " + R", hl.dsp.submap("resize"), { description = "Resize mode" })
+```
+
+Set `"submaps": false` to turn this off.
+
 ## Configure (optional)
 
 Create `~/.config/hypr-whichkey/config.json`. Every key is optional, and changes apply live without a restart.
@@ -109,7 +135,8 @@ Create `~/.config/hypr-whichkey/config.json`. Every key is optional, and changes
   "delay": 400,              // ms SUPER must be held before showing
   "position": "bottom",      // bottom | top
   "offset": 60,              // px from the screen edge
-  "group": true,             // group binds into categories
+  "group": true,
+  "submaps": true,           // show binds while a submap is active             // group binds into categories
   "categories": { "Kubernetes": "k9s|kube|helm" },   // extra categories (regex), checked before the built-in ones
   "maxColumns": 5,
   "rowsPerColumn": 8,
@@ -161,7 +188,7 @@ Modifier mask values: `SHIFT=1 CTRL=4 ALT=8 SUPER=64`.
 
 ## Roadmap
 
-- [ ] Submap support (show the binds of the active submap)
+- [x] Submap support (show the binds of the active submap)
 - [x] Group binds by category
 - [ ] AUR / COPR / Nix flake packages
 

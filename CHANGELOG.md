@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 — 2026-11-24
+
+- Submap support: entering a submap shows its binds right away (modifiers shown on the keycaps) and hides them on reset
+- Uses Hyprland's event socket, so it works with both conf and Lua configs and needs no driver changes
+- New `submaps` config option (default `true`)
+
 ## 0.2.1 — 2026-11-24
 
 - More compact default layout: smaller text, tighter keycaps and spacing (about 30% less height)

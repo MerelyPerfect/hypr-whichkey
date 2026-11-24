@@ -1,6 +1,7 @@
 {
   "size": "medium",
   "group": true,
+  "submaps": true,
   "delay": 400,
   "position": "bottom",
   "offset": 60,
