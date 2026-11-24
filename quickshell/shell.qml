@@ -78,7 +78,9 @@ ShellRoot {
     readonly property var shown: (inSubmap
             ? binds.filter(b => b.submap === submap)
             : binds.filter(b => b.submap === "" && b.mask === mask))
-        .sort((a, b) => a.key.localeCompare(b.key))
+        .sort(inSubmap
+            ? (a, b) => a.mask - b.mask || a.desc.localeCompare(b.desc)     // plain keys first, then by label
+            : (a, b) => a.key.localeCompare(b.key))
 
     // [{ title, items }] — sections split into chunks of rowsPerCol so tall groups wrap
     readonly property var sections: {

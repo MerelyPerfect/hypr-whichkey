@@ -116,9 +116,9 @@ submap = reset
 ```lua
 -- hyprland.lua
 hl.define_submap("resize", function()
-    hl.bind("right",  hl.dsp.resize({ x = 20, y = 0 }),  { description = "grow width", repeating = true })
-    hl.bind("left",   hl.dsp.resize({ x = -20, y = 0 }), { description = "shrink width", repeating = true })
-    hl.bind("Escape", hl.dsp.submap("reset"),            { description = "leave" })
+    hl.bind("right",  hl.dsp.window.resize({ x = 20, y = 0, relative = true }),  { description = "grow width", repeating = true })
+    hl.bind("left",   hl.dsp.window.resize({ x = -20, y = 0, relative = true }), { description = "shrink width", repeating = true })
+    hl.bind("Escape", hl.dsp.submap("reset"), { description = "leave" })
 end)
 hl.bind(mod .. " + R", hl.dsp.submap("resize"), { description = "Resize mode" })
 ```

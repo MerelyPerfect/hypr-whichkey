@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 — 2026-11-24
+
+- Submap binds are ordered plain keys first, then by label
+- Fixed the Lua submap example in the README (`hl.dsp.window.resize`)
+
 ## 0.3.0 — 2026-11-24
 
 - Submap support: entering a submap shows its binds right away (modifiers shown on the keycaps) and hides them on reset
